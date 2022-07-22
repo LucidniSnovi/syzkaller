@@ -236,7 +236,7 @@ func RunManager(cfg *mgrconfig.Config) {
 			numReproducing := atomic.LoadUint32(&mgr.numReproducing)
 			numFuzzing := atomic.LoadUint32(&mgr.numFuzzing)
 
-			log.Logf(0, "VMs %v, executed %v, cover %v, signal %v/%v, crashes %v, repro %v",
+			log.Logf(0, "VMs %v, executed %v, corpus cover %v, corpus signal %v, max signal %v, crashes %v, repro %v",
 				numFuzzing, executed, corpusCover, corpusSignal, maxSignal, crashes, numReproducing)
 		}
 	}()
@@ -773,6 +773,8 @@ func (mgr *Manager) runInstanceInner(index int, instanceName string) (*report.Re
 		Debug:     *flagDebug,
 		Test:      false,
 		Runtest:   false,
+		MABTS:     mgr.cfg.MABTS,
+		MABSS:     mgr.cfg.MABSS,
 		Optional: &instance.OptionalFuzzerArgs{
 			Slowdown: mgr.cfg.Timeouts.Slowdown,
 			RawCover: mgr.cfg.RawCover,

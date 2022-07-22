@@ -8,8 +8,10 @@ package rpctype
 import (
 	"math"
 
+	"github.com/google/syzkaller/pkg/hash"
 	"github.com/google/syzkaller/pkg/host"
 	"github.com/google/syzkaller/pkg/ipc"
+	"github.com/google/syzkaller/pkg/mab"
 	"github.com/google/syzkaller/pkg/signal"
 )
 
@@ -20,6 +22,14 @@ type Input struct {
 	Cover    []uint32
 	CallID   int // seq number of call in the prog to which the item is related (-1 for extra)
 	RawCover []uint32
+	Reward   mab.CorpusReward
+}
+
+type RPCMABStatus struct {
+	Round        int
+	Exp31Round   int
+	Reward       mab.TotalReward
+	CorpusReward map[hash.Sig]mab.CorpusReward
 }
 
 type Candidate struct {
@@ -74,12 +84,14 @@ type PollArgs struct {
 	NeedCandidates bool
 	MaxSignal      signal.Serial
 	Stats          map[string]uint64
+	RPCMABStatus
 }
 
 type PollRes struct {
 	Candidates []Candidate
 	NewInputs  []Input
 	MaxSignal  signal.Serial
+	RPCMABStatus
 }
 
 type RunnerConnectArgs struct {

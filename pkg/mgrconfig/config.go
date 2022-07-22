@@ -186,6 +186,10 @@ type Config struct {
 
 	// Implementation details beyond this point. Filled after parsing.
 	Derived `json:"-"`
+
+	// MAB task selection and seed selection
+	MABTS bool `json:"mabts"`
+	MABSS bool `json:"mabss"`
 }
 
 type Subsystem struct {

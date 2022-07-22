@@ -187,6 +187,8 @@ func (mgr *Manager) boot(name string, index int) (*report.Report, error) {
 		Debug:     mgr.debug,
 		Test:      false,
 		Runtest:   true,
+		MABTS:     mgr.cfg.MABTS,
+		MABSS:     mgr.cfg.MABSS,
 		Optional: &instance.OptionalFuzzerArgs{
 			Slowdown: mgr.cfg.Timeouts.Slowdown,
 		},

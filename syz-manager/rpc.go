@@ -11,8 +11,10 @@ import (
 	"time"
 
 	"github.com/google/syzkaller/pkg/cover"
+	"github.com/google/syzkaller/pkg/hash"
 	"github.com/google/syzkaller/pkg/host"
 	"github.com/google/syzkaller/pkg/log"
+	"github.com/google/syzkaller/pkg/mab"
 	"github.com/google/syzkaller/pkg/mgrconfig"
 	"github.com/google/syzkaller/pkg/rpctype"
 	"github.com/google/syzkaller/pkg/signal"
@@ -38,6 +40,12 @@ type RPCServer struct {
 	rotator       *prog.Rotator
 	rnd           *rand.Rand
 	checkFailures int
+
+	// For now we assume a single-fuzzer model
+	MABRound        int
+	MABExp31Round   int
+	MABReward       mab.TotalReward
+	MABCorpusReward map[hash.Sig]mab.CorpusReward
 }
 
 type Fuzzer struct {
@@ -66,11 +74,14 @@ type RPCManagerView interface {
 
 func startRPCServer(mgr *Manager) (*RPCServer, error) {
 	serv := &RPCServer{
-		mgr:     mgr,
-		cfg:     mgr.cfg,
-		stats:   mgr.stats,
-		fuzzers: make(map[string]*Fuzzer),
-		rnd:     rand.New(rand.NewSource(time.Now().UnixNano())),
+		mgr:             mgr,
+		cfg:             mgr.cfg,
+		stats:           mgr.stats,
+		fuzzers:         make(map[string]*Fuzzer),
+		rnd:             rand.New(rand.NewSource(time.Now().UnixNano())),
+		MABRound:        0,
+		MABExp31Round:   0,
+		MABCorpusReward: make(map[hash.Sig]mab.CorpusReward),
 	}
 	serv.batchSize = 5
 	if serv.batchSize < mgr.cfg.Procs {
@@ -273,6 +284,10 @@ func (serv *RPCServer) NewInput(a *rpctype.NewInputArgs, r *int) error {
 		return nil
 	}
 
+	// Update reward
+	sig := hash.Hash(a.Input.Prog)
+	serv.MABCorpusReward[sig] = a.Input.Reward
+
 	if f != nil && f.rotated {
 		f.rotatedSignal.Merge(inputSignal)
 	}
@@ -358,6 +373,17 @@ func (serv *RPCServer) Poll(a *rpctype.PollArgs, r *rpctype.PollRes) error {
 		for i := 0; i < batchSize && len(f.inputs) > 0; i++ {
 			last := len(f.inputs) - 1
 			r.NewInputs = append(r.NewInputs, f.inputs[last])
+
+			// Send MAB status as well
+			sig := hash.Hash(f.inputs[last].Prog)
+			if r.CorpusReward == nil {
+				r.CorpusReward = make(map[hash.Sig]mab.CorpusReward)
+			}
+			if v, ok := serv.MABCorpusReward[sig]; ok {
+				r.CorpusReward[sig] = v
+				r.NewInputs[len(r.NewInputs)-1].Reward = v
+			}
+
 			f.inputs[last] = rpctype.Input{}
 			f.inputs = f.inputs[:last]
 		}
@@ -365,6 +391,8 @@ func (serv *RPCServer) Poll(a *rpctype.PollArgs, r *rpctype.PollRes) error {
 			f.inputs = nil
 		}
 	}
+	// Sync MAB status
+	serv.SyncMABStatus(&a.RPCMABStatus, &r.RPCMABStatus)
 	log.Logf(4, "poll from %v: candidates=%v inputs=%v maxsignal=%v",
 		a.Name, len(r.Candidates), len(r.NewInputs), len(r.MaxSignal.Elems))
 	return nil
@@ -380,4 +408,25 @@ func (serv *RPCServer) shutdownInstance(name string) []byte {
 	}
 	delete(serv.fuzzers, name)
 	return fuzzer.machineInfo
+}
+
+func (serv *RPCServer) SyncMABStatus(a *rpctype.RPCMABStatus, r *rpctype.RPCMABStatus) error {
+	if a.Round > serv.MABRound {
+		serv.MABRound = a.Round
+		serv.MABExp31Round = a.Exp31Round
+		serv.MABReward = a.Reward
+		for sig, v := range a.CorpusReward {
+			serv.MABCorpusReward[sig] = v
+			log.Logf(4, "MAB Corpus Sync %v: %+v\n", sig.String(), v)
+		}
+	} else if a.Round < serv.MABRound {
+		r.Round = serv.MABRound
+		r.Exp31Round = serv.MABExp31Round
+		r.Reward = serv.MABReward
+		r.CorpusReward = make(map[hash.Sig]mab.CorpusReward)
+		for sig, v := range serv.MABCorpusReward {
+			r.CorpusReward[sig] = v
+		}
+	}
+	return nil
 }

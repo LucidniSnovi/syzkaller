@@ -10,8 +10,10 @@ import (
 func (p *Prog) Clone() *Prog {
 	newargs := make(map[*ResultArg]*ResultArg)
 	p1 := &Prog{
-		Target: p.Target,
-		Calls:  cloneCalls(p.Calls, newargs),
+		Target:       p.Target,
+		Calls:        cloneCalls(p.Calls, newargs),
+		Source:       p.Source,
+		CorpusReward: p.CorpusReward,
 	}
 	p1.debugValidate()
 	return p1

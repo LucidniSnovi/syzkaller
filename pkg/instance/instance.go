@@ -436,6 +436,8 @@ type FuzzerCmdArgs struct {
 	Debug     bool
 	Test      bool
 	Runtest   bool
+	MABTS     bool
+	MABSS     bool
 	Optional  *OptionalFuzzerArgs
 }
 
@@ -463,10 +465,16 @@ func FuzzerCmd(args *FuzzerCmdArgs) string {
 		}
 		optionalArg = " " + tool.OptionalFlags(flags)
 	}
-	return fmt.Sprintf("%v -executor=%v -name=%v -arch=%v%v -manager=%v -sandbox=%v"+
+	ret := fmt.Sprintf("%v -executor=%v -name=%v -arch=%v%v -manager=%v -sandbox=%v"+
 		" -procs=%v -cover=%v -debug=%v -test=%v%v%v%v",
 		args.Fuzzer, args.Executor, args.Name, args.Arch, osArg, args.FwdAddr, args.Sandbox,
 		args.Procs, args.Cover, args.Debug, args.Test, runtestArg, verbosityArg, optionalArg)
+	// Only add MAB args when not testing, since instance_test cannot
+	// parse new flags
+	if !args.Test {
+		ret += fmt.Sprintf(" -mabts=%v -mabss=%v", args.MABTS, args.MABSS)
+	}
+	return ret
 }
 
 func OldFuzzerCmd(fuzzer, executor, name, OS, arch, fwdAddr, sandbox string, procs int,
@@ -478,7 +486,7 @@ func OldFuzzerCmd(fuzzer, executor, name, OS, arch, fwdAddr, sandbox string, pro
 	return FuzzerCmd(&FuzzerCmdArgs{Fuzzer: fuzzer, Executor: executor, Name: name,
 		OS: OS, Arch: arch, FwdAddr: fwdAddr, Sandbox: sandbox, Procs: procs,
 		Verbosity: 0, Cover: cover, Debug: false, Test: test, Runtest: false,
-		Optional: optional})
+		MABTS: false, MABSS: false, Optional: optional})
 }
 
 func ExecprogCmd(execprog, executor, OS, arch, sandbox string, repeat, threaded, collide bool,
