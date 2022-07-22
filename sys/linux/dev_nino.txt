@@ -1,0 +1,11 @@
+# Copyright 2018 syzkaller project authors. All rights reserved.
+# Use of this source code is governed by Apache 2 LICENSE that can be found in the LICENSE file.
+
+include <uapi/linux/fcntl.h>
+
+resource fd_nino[fd]
+
+openat$nino(fd const[AT_FDCWD], file ptr[in, string["/dev/nino_example"]], flags flags[open_flags]) fd_nino
+
+write$nino(fd fd_nino, data ptr[in, array[int8]], len bytesize[data])
+read$nino(fd fd_nino, data ptr[out, array[int8]], len bytesize[data])
