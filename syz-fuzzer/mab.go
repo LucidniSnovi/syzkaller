@@ -23,9 +23,10 @@ const (
 type MABStatus struct {
 	fuzzer *Fuzzer
 
-	MABMu     sync.RWMutex
-	SSEnabled bool
-	TSEnabled bool
+	MABMu      sync.RWMutex
+	SSEnabled  bool
+	TSEnabled  bool
+	GenEnabled bool
 
 	SSGamma float64
 	SSEta   float64

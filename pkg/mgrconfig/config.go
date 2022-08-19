@@ -190,6 +190,8 @@ type Config struct {
 	// MAB task selection and seed selection
 	MABTS bool `json:"mabts"`
 	MABSS bool `json:"mabss"`
+	// MAB Generation
+	MABGEN bool `json:"mabgen"`
 }
 
 type Subsystem struct {

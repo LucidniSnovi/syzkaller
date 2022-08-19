@@ -156,6 +156,7 @@ func main() {
 		flagRawCover = flag.Bool("raw_cover", false, "fetch raw coverage")
 		flagMABTS    = flag.Bool("mabts", false, "enable mab task selection")
 		flagMABSS    = flag.Bool("mabss", false, "enable mab seed selection")
+		flagMABGEN   = flag.Bool("mabgen", false, "enable mab generation")
 	)
 	defer tool.Init()()
 	outputType := parseOutputType(*flagOutput)
@@ -281,6 +282,7 @@ func main() {
 		MABStatus: MABStatus{
 			TSEnabled:      *flagMABTS,
 			SSEnabled:      *flagMABSS,
+			GenEnabled:     *flagMABGEN,
 			CorpusUpdate:   make(map[int]int),
 			TSGamma:        0.05,
 			TSEta:          0.1,

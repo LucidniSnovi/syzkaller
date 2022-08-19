@@ -775,6 +775,7 @@ func (mgr *Manager) runInstanceInner(index int, instanceName string) (*report.Re
 		Runtest:   false,
 		MABTS:     mgr.cfg.MABTS,
 		MABSS:     mgr.cfg.MABSS,
+		MABGEN:    mgr.cfg.MABGEN,
 		Optional: &instance.OptionalFuzzerArgs{
 			Slowdown: mgr.cfg.Timeouts.Slowdown,
 			RawCover: mgr.cfg.RawCover,
