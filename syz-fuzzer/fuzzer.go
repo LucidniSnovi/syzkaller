@@ -311,6 +311,14 @@ func main() {
 	}
 	fuzzer.choiceTable = target.BuildChoiceTable(fuzzer.corpus, calls)
 
+	if fuzzer.MABStatus.GenEnabled {
+		log.Logf(0, "Creating MAB Enabled calls and MAB Choice table.\n")
+		fuzzer.choiceTable.MabGenEnabled = true
+		fuzzer.choiceTable.CreateMABEnabledCalls()
+		fuzzer.choiceTable.CreateMABChoiceTable()
+		log.Logf(0, "Creating MAB Enabled calls and MAB Choice table...DONE\n")
+	}
+
 	if r.CoverFilterBitmap != nil {
 		fuzzer.execOpts.Flags |= ipc.FlagEnableCoverageFilter
 	}
@@ -439,6 +447,12 @@ func (fuzzer *Fuzzer) poll(needCandidates bool, stats map[string]uint64) bool {
 	if fuzzer.MABStatus.TSEnabled || fuzzer.MABStatus.SSEnabled {
 		fuzzer.MABStatus.MABMu.Lock()
 		a.RPCMABStatus = fuzzer.MABStatus.readMABStatus()
+		if fuzzer.MABStatus.GenEnabled {
+			a.RPCMABGenSync = fuzzer.MABStatus.readMABGenSync(fuzzer.choiceTable)
+		}
+	} else if fuzzer.MABStatus.GenEnabled {
+		fuzzer.MABStatus.MABMu.Lock()
+		a.RPCMABGenSync = fuzzer.MABStatus.readMABGenSync(fuzzer.choiceTable)
 	}
 	r := &rpctype.PollRes{}
 	if err := fuzzer.manager.Call("Manager.Poll", a, r); err != nil {
@@ -459,6 +473,12 @@ func (fuzzer *Fuzzer) poll(needCandidates bool, stats map[string]uint64) bool {
 	}
 	if fuzzer.MABStatus.TSEnabled || fuzzer.MABStatus.SSEnabled {
 		fuzzer.MABStatus.writeMABStatus(r.RPCMABStatus)
+		if fuzzer.MABStatus.GenEnabled {
+			fuzzer.MABStatus.writeMABGenSync(fuzzer.choiceTable, r.RPCMABGenSync)
+		}
+		fuzzer.MABStatus.MABMu.Unlock()
+	} else if fuzzer.MABStatus.GenEnabled {
+		fuzzer.MABStatus.writeMABGenSync(fuzzer.choiceTable, r.RPCMABGenSync)
 		fuzzer.MABStatus.MABMu.Unlock()
 	}
 	return len(r.NewInputs) != 0 || len(r.Candidates) != 0 || maxSignal.Len() != 0

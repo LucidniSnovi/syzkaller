@@ -6,6 +6,7 @@ package prog
 import (
 	"bytes"
 	"fmt"
+	"github.com/google/syzkaller/pkg/mab"
 	"math"
 	"math/rand"
 	"path/filepath"
@@ -535,14 +536,94 @@ func (r *randGen) nOutOf(n, outOf int) bool {
 }
 
 func (r *randGen) generateCall(s *state, p *Prog, insertionPoint int) []*Call {
+	fmt.Printf("-------------------------- generateCall - BEGIN\n")
+	idx := -1
 	biasCall := -1
-	if insertionPoint > 0 {
-		// Choosing the base call is based on the insertion point of the new calls sequence.
-		biasCall = p.Calls[r.Intn(insertionPoint)].Meta.ID
+	if !s.ct.MabGenEnabled {
+		if insertionPoint > 0 {
+			// Choosing the base call is based on the insertion point of the new calls sequence.
+			biasCall = p.Calls[r.Intn(insertionPoint)].Meta.ID
+		}
+		idx = s.ct.choose(r.Rand, biasCall)
+	} else {
+		biasPr := -1.0
+		biasCall, biasPr = r.chooseFromProgram(s.ct, p)
+		if biasCall == -1 {
+			biasCall, biasPr = s.ct.MabEnabledCalls.Choose(r.Rand)
+		}
+		if !s.ct.Enabled(biasCall) {
+			fmt.Printf("bias to disabled syscall %v\n", s.ct.target.Syscalls[biasCall].Name)
+			panic("disabled syscall")
+		}
+		fmt.Printf("-------------------------- generateCall - adding BIAS %v:%v\n", biasCall, biasPr)
+		p.MabBiasCalls = append(p.MabBiasCalls, mab.SyscallProbability{SyscallID: biasCall, Probability: biasPr})
+
+		resultCall, resultCallPr := s.ct.MabChoiceTable.Choose(biasCall, r.Rand)
+		if !s.ct.Enabled(resultCall) {
+			fmt.Printf("Result call is disabled - %v\n", s.ct.target.Syscalls[resultCall].Name)
+			panic("selected disabled syscall")
+		}
+		fmt.Printf("-------------------------- generateCall - adding RESULT %v:%v\n", resultCall, resultCallPr)
+		p.MabGeneratedCalls = append(p.MabGeneratedCalls, mab.SyscallProbability{SyscallID: resultCall, Probability: resultCallPr})
+
+		idx = resultCall
 	}
-	idx := s.ct.choose(r.Rand, biasCall)
+
 	meta := r.target.Syscalls[idx]
 	return r.generateParticularCall(s, meta)
+}
+
+func (r *randGen) chooseFromProgram(ct *ChoiceTable, p *Prog) (int, float64) {
+	//fmt.Printf("-------------------------- chooseFromProgram - prog length = %v [%v]\n", len(p.Calls), p.Calls)
+	var currentCallsChoice []mab.Choice
+	var currentCallsProbability []mab.SyscallProbability
+
+	if len(p.Calls) == 0 {
+		return -1, -1.0
+	}
+
+	for _, call := range p.Calls {
+		fmt.Printf("-------------------------- chooseFromProgram - ID = %v;  Name = %v\n", call.Meta.ID, call.Meta.Name)
+		//If "currentCallsProbability" already has the syscall ID just skip it
+		found := false
+		for i := range currentCallsProbability {
+			if currentCallsProbability[i].SyscallID == call.Meta.ID {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+
+		mabChoice, mabProbability := ct.MabEnabledCalls.GetChoiceAndProbability(call.Meta.ID)
+		newChoice := mab.Choice{
+			Reward:     0,
+			Weight:     mabChoice.Weight,
+			SumWeights: mabChoice.Weight,
+		}
+
+		if len(currentCallsChoice) > 0 {
+			newChoice.SumWeights = currentCallsChoice[len(currentCallsChoice)-1].SumWeights + newChoice.Weight
+		}
+
+		currentCallsChoice = append(currentCallsChoice, newChoice)
+		currentCallsProbability = append(currentCallsProbability, mab.SyscallProbability{SyscallID: call.Meta.ID, Probability: mabProbability})
+	}
+
+	if len(currentCallsChoice) == 0 {
+		return -1, -1.0
+	}
+
+	//fmt.Printf("-------------------------- chooseFromProgram - currentCallsChoice length = %v\n", len(currentCallsChoice))
+
+	sumWeights := currentCallsChoice[len(currentCallsChoice)-1].SumWeights
+	randVal := r.Float64() * sumWeights
+	idx := sort.Search(len(currentCallsChoice), func(i int) bool {
+		return currentCallsChoice[i].SumWeights >= randVal
+	})
+
+	return currentCallsProbability[idx].SyscallID, currentCallsProbability[idx].Probability
 }
 
 func (r *randGen) generateParticularCall(s *state, meta *Syscall) (calls []*Call) {

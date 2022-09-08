@@ -55,6 +55,11 @@ type Fuzzer struct {
 	newMaxSignal  signal.Signal
 	rotatedSignal signal.Signal
 	machineInfo   []byte
+
+	MABEnabledCallsRewards map[int]float64
+	MABChoiceTableRewards  map[int]map[int]float64
+	MABGenCoverage         int
+	MABGenTime             float64
 }
 
 type BugFrames struct {
@@ -395,6 +400,13 @@ func (serv *RPCServer) Poll(a *rpctype.PollArgs, r *rpctype.PollRes) error {
 	serv.SyncMABStatus(&a.RPCMABStatus, &r.RPCMABStatus)
 	log.Logf(4, "poll from %v: candidates=%v inputs=%v maxsignal=%v",
 		a.Name, len(r.Candidates), len(r.NewInputs), len(r.MaxSignal.Elems))
+
+	/*
+		if serv.cfg.MABGEN {
+			serv.SyncMABGenStatus(f, &a.RPCMABGenSync, &r.RPCMABGenSync)
+		}
+	*/
+
 	return nil
 }
 
@@ -428,5 +440,56 @@ func (serv *RPCServer) SyncMABStatus(a *rpctype.RPCMABStatus, r *rpctype.RPCMABS
 			r.CorpusReward[sig] = v
 		}
 	}
+	return nil
+}
+
+func (serv *RPCServer) SyncMABGenStatus(fuzzer *Fuzzer, a *rpctype.RPCMABGenSync, r *rpctype.RPCMABGenSync) error {
+	//Process Enabled calls
+	for ID, reward := range a.EnabledCalls {
+		fuzzer.MABEnabledCallsRewards[ID] = reward
+		var newReward float64
+		var rewardsCount int
+		for _, currentFuzzer := range serv.fuzzers {
+			if _, ok := currentFuzzer.MABEnabledCallsRewards[ID]; ok {
+				newReward += currentFuzzer.MABEnabledCallsRewards[ID]
+				rewardsCount++
+			}
+		}
+		newReward = newReward / float64(rewardsCount)
+
+		if newReward != reward {
+			fuzzer.MABEnabledCallsRewards[ID] = newReward
+			r.EnabledCalls[ID] = reward
+		}
+	}
+
+	//Process Choice Table
+	for biasCall, generatedCalls := range a.ChoiceTable {
+		for ID, reward := range generatedCalls {
+			fuzzer.MABChoiceTableRewards[biasCall][ID] = reward
+			var newReward float64
+			var rewardsCount int
+			for _, currentFuzzer := range serv.fuzzers {
+				if _, ok := currentFuzzer.MABChoiceTableRewards[biasCall][ID]; ok {
+					newReward += currentFuzzer.MABChoiceTableRewards[biasCall][ID]
+					rewardsCount++
+				}
+			}
+			newReward = newReward / float64(rewardsCount)
+
+			if newReward != reward {
+				fuzzer.MABChoiceTableRewards[biasCall][ID] = newReward
+				r.ChoiceTable[biasCall][ID] = newReward
+			}
+		}
+	}
+
+	//Process Cov and Time
+	fuzzer.MABGenCoverage += a.Coverage
+	fuzzer.MABGenTime += a.Time
+
+	r.Coverage = fuzzer.MABGenCoverage
+	r.Time = fuzzer.MABGenTime
+
 	return nil
 }

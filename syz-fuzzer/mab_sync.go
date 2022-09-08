@@ -8,6 +8,7 @@ import (
 	"github.com/google/syzkaller/pkg/log"
 	"github.com/google/syzkaller/pkg/mab"
 	"github.com/google/syzkaller/pkg/rpctype"
+	"github.com/google/syzkaller/prog"
 )
 
 func (status *MABStatus) readMABStatus() rpctype.RPCMABStatus {
@@ -58,4 +59,33 @@ func (status *MABStatus) writeMABStatus(managerStatus rpctype.RPCMABStatus) {
 			log.Logf(MABLogLevel, "MAB Corpus Sync Receive %v: %+v\n", sig.String(), v)
 		}
 	}
+}
+
+func (status *MABStatus) readMABGenSync(ct *prog.ChoiceTable) rpctype.RPCMABGenSync {
+	var syncData rpctype.RPCMABGenSync
+	if ct == nil {
+		syncData = rpctype.RPCMABGenSync{
+			EnabledCalls: make(map[int]float64),
+			ChoiceTable:  make(map[int]map[int]float64),
+		}
+	} else {
+		enabledCallsRewards, timeDiff, covDiff := ct.MabEnabledCalls.Poll()
+		choiceTableRewards := ct.MabChoiceTable.Poll()
+
+		syncData = rpctype.RPCMABGenSync{
+			EnabledCalls: enabledCallsRewards,
+			ChoiceTable:  choiceTableRewards,
+			Coverage:     covDiff,
+			Time:         timeDiff,
+		}
+	}
+
+	return syncData
+}
+
+func (status *MABStatus) writeMABGenSync(ct *prog.ChoiceTable, managerStatus rpctype.RPCMABGenSync) {
+	/*
+		ct.MabEnabledCalls.UpdateSyncData(managerStatus.EnabledCalls, managerStatus.Time, managerStatus.Coverage)
+		ct.MabChoiceTable.UpdateSyncData(managerStatus.ChoiceTable, managerStatus.Time, managerStatus.Coverage)
+	*/
 }

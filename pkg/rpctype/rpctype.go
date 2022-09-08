@@ -32,6 +32,13 @@ type RPCMABStatus struct {
 	CorpusReward map[hash.Sig]mab.CorpusReward
 }
 
+type RPCMABGenSync struct {
+	EnabledCalls map[int]float64
+	ChoiceTable  map[int]map[int]float64
+	Coverage     int
+	Time         float64
+}
+
 type Candidate struct {
 	Prog      []byte
 	Minimized bool
@@ -84,6 +91,7 @@ type PollArgs struct {
 	NeedCandidates bool
 	MaxSignal      signal.Serial
 	Stats          map[string]uint64
+	RPCMABGenSync
 	RPCMABStatus
 }
 
@@ -91,6 +99,7 @@ type PollRes struct {
 	Candidates []Candidate
 	NewInputs  []Input
 	MaxSignal  signal.Serial
+	RPCMABGenSync
 	RPCMABStatus
 }
 

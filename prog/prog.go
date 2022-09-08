@@ -17,6 +17,9 @@ type Prog struct {
 
 	Source       int // Gen: 0, Mut: 1, Tri: 2
 	CorpusReward mab.CorpusReward
+
+	MabBiasCalls      []mab.SyscallProbability
+	MabGeneratedCalls []mab.SyscallProbability
 }
 
 // These properties are parsed and serialized according to the tag and the type

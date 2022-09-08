@@ -4,6 +4,7 @@
 package main
 
 import (
+	"github.com/google/syzkaller/prog"
 	"math"
 
 	"github.com/google/syzkaller/pkg/hash"
@@ -126,7 +127,7 @@ func (status *MABStatus) UpdateTriageWeight(result mab.TriageResult, pr []float6
 	}
 }
 
-func (status *MABStatus) UpdateGenerateWeight(result mab.ExecResult, pr []float64) {
+func (status *MABStatus) UpdateGenerateWeight(ct *prog.ChoiceTable, result mab.ExecResult, pr []float64) {
 	cov := float64(result.Cov)
 	time := result.TimeExec
 	// Convert and normalize
@@ -137,6 +138,13 @@ func (status *MABStatus) UpdateGenerateWeight(result mab.ExecResult, pr []float6
 	status.Reward.EstimatedRewardGenerate += rewardEst
 	status.Reward.RewardAllTasks.Update(reward, 0.0)
 	status.Reward.RawAllTasks.Update(cov, time)
+
+	if ct.MabGenEnabled {
+		log.Logf(0, "--------------------------- MABStatus::UpdateGenerateWeight --- ENABLED CALLS\n")
+		ct.MabEnabledCalls.UpdateBatch(result.MabBiasCalls, result)
+		log.Logf(0, "--------------------------- MABStatus::UpdateGenerateWeight --- CHOICE TABLE CALLS\n")
+		ct.MabChoiceTable.UpdateBatch(result.MabBiasCalls, result.MabGeneratedCalls, result)
+	}
 }
 
 func (status *MABStatus) UpdateMutateWeight(result mab.ExecResult, pr []float64) {
@@ -239,7 +247,7 @@ func (status *MABStatus) UpdateMutateWeight(result mab.ExecResult, pr []float64)
 	status.Reward.RawMutateOnly.Update(cov, time)
 }
 
-func (status *MABStatus) UpdateWeight(itemType int, result interface{}, pr []float64) {
+func (status *MABStatus) UpdateWeight(ct *prog.ChoiceTable, itemType int, result interface{}, pr []float64) {
 	// 0 = Generate, 1 = Mutate, 2 = Triage
 	if itemType < 0 || itemType > 2 || len(pr) < 3 {
 		log.Logf(MABLogLevel, "MAB Error: itemType = %v\n", itemType)
@@ -274,7 +282,7 @@ func (status *MABStatus) UpdateWeight(itemType int, result interface{}, pr []flo
 		if !ok {
 			return
 		}
-		status.UpdateGenerateWeight(_r, pr)
+		status.UpdateGenerateWeight(ct, _r, pr)
 	} else if itemType == 1 { // Mutate
 		_r, ok := _result.(mab.ExecResult)
 		if !ok {

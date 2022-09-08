@@ -13,11 +13,16 @@ import (
 )
 
 func (proc *Proc) DoGenerate() *mab.ExecResult {
+	log.Logf(0, "-------------------------- DoGenerate\n")
 	ts0 := time.Now().UnixNano()
 	ct := proc.fuzzer.choiceTable
 	p := proc.fuzzer.target.Generate(proc.rnd, prog.RecommendedCalls, ct)
 	_, ret := proc.execute(proc.execOpts, p, ProgNormal, StatSmash)
 	ret.TimeTotal = float64(time.Now().UnixNano()-ts0) / MABTimeUnit
+	if ct.MabGenEnabled {
+		ret.MabBiasCalls = p.MabBiasCalls
+		ret.MabGeneratedCalls = p.MabGeneratedCalls
+	}
 	return &ret
 }
 
@@ -69,6 +74,7 @@ func (proc *Proc) clearQueue() {
 }
 
 func (proc *Proc) MABLoop() {
+	log.Logf(0, "-------------------------- MABLoop\n")
 	// Compute weight and proba
 	weight := proc.fuzzer.MABStatus.GetTSWeight(true)
 	fuzzerSnapshot := proc.fuzzer.snapshot()
@@ -119,5 +125,5 @@ func (proc *Proc) MABLoop() {
 		log.Logf(0, "MAB Choice: %v, Result: %+v\n", choice, r)
 	}
 	// Update Weight
-	proc.fuzzer.MABStatus.UpdateWeight(choice, r, prTasks)
+	proc.fuzzer.MABStatus.UpdateWeight(proc.fuzzer.choiceTable, choice, r, prTasks)
 }

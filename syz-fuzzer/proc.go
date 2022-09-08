@@ -97,12 +97,17 @@ func (proc *Proc) loop() {
 		// is not that important
 		proc.fuzzer.MABStatus.Round++
 
+		log.Logf(0, "------------------------ loop()\n")
+
 		// If we use MAB for task selection
 		if proc.fuzzer.MABStatus.TSEnabled {
+			log.Logf(0, "------------------------ loop() --- 1111\n")
 			proc.clearQueue()
+			log.Logf(0, "------------------------ loop() --- 2222\n")
 			proc.MABLoop()
 			continue
 		}
+		log.Logf(0, "------------------------ loop() --- 3333\n")
 
 		item := proc.fuzzer.workQueue.dequeue(DequeueOptionAny)
 		if item != nil {
@@ -135,7 +140,7 @@ func (proc *Proc) loop() {
 			r.Pidx = pidx
 			r.TimeTotal = float64(time.Now().UnixNano()-ts0) / MABTimeUnit
 			if proc.fuzzer.MABStatus.SSEnabled {
-				proc.fuzzer.MABStatus.UpdateWeight(1, r, []float64{1.0, 1.0, 1.0})
+				proc.fuzzer.MABStatus.UpdateWeight(proc.fuzzer.choiceTable, 1, r, []float64{1.0, 1.0, 1.0})
 			}
 			log.Logf(0, "Work Type: 1, Result: %+v\n", r)
 		}

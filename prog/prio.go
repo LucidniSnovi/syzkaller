@@ -5,6 +5,7 @@ package prog
 
 import (
 	"fmt"
+	"github.com/google/syzkaller/pkg/mab"
 	"math/rand"
 	"sort"
 )
@@ -185,6 +186,10 @@ type ChoiceTable struct {
 	target *Target
 	runs   [][]int32
 	calls  []*Syscall
+
+	MabGenEnabled   bool
+	MabEnabledCalls *mab.Helper
+	MabChoiceTable  *mab.MatrixHelper
 }
 
 func (target *Target) BuildChoiceTable(corpus []*Prog, enabled map[*Syscall]bool) *ChoiceTable {
@@ -232,7 +237,7 @@ func (target *Target) BuildChoiceTable(corpus []*Prog, enabled map[*Syscall]bool
 			run[i][j] = sum
 		}
 	}
-	return &ChoiceTable{target, run, enabledCalls}
+	return &ChoiceTable{target, run, enabledCalls, false, nil, nil}
 }
 
 func (ct *ChoiceTable) Enabled(call int) bool {
@@ -256,4 +261,46 @@ func (ct *ChoiceTable) choose(r *rand.Rand, bias int) int {
 		panic("selected disabled syscall")
 	}
 	return res
+}
+
+func (ct *ChoiceTable) CreateMABEnabledCalls() {
+	ct.MabEnabledCalls = mab.NewHelper(mab.MABDefaultThetaValue)
+	for _, call := range ct.calls {
+		ct.MabEnabledCalls.NewChoice(call.ID)
+	}
+
+	/*	fmt.Printf("--------------------------------- CALLS ---------------------------------\n")
+		for i, call := range ct.calls {
+			fmt.Printf("%v. ID = %v\n", i, call.ID)
+		}
+		fmt.Printf("--------------------------------- CALLS ---------------------------------\n")
+
+		fmt.Printf("--------------------------------- ENABLED CALLS ---------------------------------\n")
+		ct.MabEnabledCalls.DumpElements()
+		fmt.Printf("--------------------------------- ENABLED CALLS ---------------------------------\n")*/
+}
+
+func (ct *ChoiceTable) CreateMABChoiceTable() {
+	ct.MabChoiceTable = mab.NewMatrixHelper(ct.runs)
+
+	/*	fmt.Printf("--------------------------------- CHOICE TABLE ---------------------------------\n")
+		for i := range ct.runs {
+			if ct.runs[i] != nil {
+				fmt.Printf("\n %v. elements: %v\n", i, ct.runs[i])
+				//for j := range ct.runs[i] {
+				//fmt.Printf("%v  ", ct.runs[i][j])
+				//}
+			} else {
+				fmt.Printf("\n %v. has no elements...\n", i)
+			}
+
+			if i == 50 {
+				break
+			}
+		}
+		fmt.Printf("--------------------------------- CHOICE TABLE ---------------------------------\n")
+
+		fmt.Printf("--------------------------------- MAB CHOICE TABLE ---------------------------------\n")
+		ct.MabChoiceTable.DumpElements(50)
+		fmt.Printf("--------------------------------- MAB CHOICE TABLE ---------------------------------\n")*/
 }

@@ -12,6 +12,9 @@ type ExecResult struct {
 	TimeExec  float64 // Executing time (s)
 	TimeTotal float64 // Total time (s)
 	Pidx      int     // If mutation, the idx of the seed program
+
+	MabBiasCalls      []SyscallProbability
+	MabGeneratedCalls []SyscallProbability
 }
 
 type TriageResult struct {
