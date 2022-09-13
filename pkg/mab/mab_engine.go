@@ -52,11 +52,16 @@ func (mab *MultiArmedBandit) Choose(r *rand.Rand) (int, float64) {
 	}
 	sumWeights := mab.choices[len(mab.choices)-1].SumWeights
 	randVal := r.Float64() * sumWeights
-	//log.Logf(0, "-------------------------> Choose --- sumWeights : %v,   randVal : %v", sumWeights, randVal)
 	idx := sort.Search(len(mab.choices), func(i int) bool {
 		return mab.choices[i].SumWeights >= randVal
 	})
-	log.Logf(0, "-------------------------> Choose --- idx: %v,    W: %v,    sumWeights: %v", idx, mab.choices[idx].Weight, sumWeights)
+
+	log.Logf(0, "-------------------------> Choose --- CHOICES:\n")
+	for i := range mab.choices {
+		log.Logf(0, "%v, ", mab.choices[i].SumWeights)
+	}
+	log.Logf(0, "\n")
+	log.Logf(0, "-------------------------> Choose --- randVal: %v; sumWeights: %v; chosen SW: %v", randVal, sumWeights, mab.choices[idx].SumWeights)
 	return idx, mab.choices[idx].Weight / sumWeights
 }
 
@@ -202,9 +207,6 @@ func (mab *MultiArmedBandit) UpdateSync(idx int, reward float64) {
 
 	if idx >= len(mab.choices) {
 		log.Fatalf("MAB Update Error: Index %v out of bound %v", idx, len(mab.choices))
-	}
-	if reward > 1.0 || reward < -1.0 {
-		log.Fatalf("MAB Update Error: Reward (%v) should have been normalized to [-1, 1]", reward)
 	}
 	oldReward := mab.choices[idx].Reward
 	mab.choices[idx].Reward = reward

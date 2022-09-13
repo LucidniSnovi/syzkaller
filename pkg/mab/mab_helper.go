@@ -46,7 +46,7 @@ func (mh *Helper) Choose(r *rand.Rand) (int, float64) {
 	defer mh.mu.Unlock()
 
 	idx, pr := mh.mab.Choose(r)
-	log.Logf(1, "------------------------> IDX:%v,   ID:%v,    PR:%v\n", idx, mh.elementIDs[idx], pr)
+	log.Logf(1, "------------------------> IDX:%v; ID:%v; PR:%v\n", idx, mh.elementIDs[idx], pr)
 	if idx < 0 {
 		// No choices available in the MAB engine.
 		return idx, 0.0
@@ -309,8 +309,7 @@ func (mh *Helper) UpdateSyncData(calls map[int]float64, timeTotal float64, covTo
 		}
 	}
 
-	log.Logf(MABLogLevel, "MAB total time: %v -> %v, coverage: %v -> %v",
-		mh.totalTime, timeTotal, mh.totalCov, covTotal)
+	//log.Logf(MABLogLevel, "MAB total time: %v -> %v, coverage: %v -> %v", mh.totalTime, timeTotal, mh.totalCov, covTotal)
 	mh.totalTime = timeTotal
 	mh.totalCov = covTotal
 }

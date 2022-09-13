@@ -583,8 +583,8 @@ func (r *randGen) chooseFromProgram(ct *ChoiceTable, p *Prog) (int, float64) {
 	}
 
 	for _, call := range p.Calls {
-		fmt.Printf("-------------------------- chooseFromProgram - ID = %v;  Name = %v\n", call.Meta.ID, call.Meta.Name)
-		//If "currentCallsProbability" already has the syscall ID just skip it
+		//fmt.Printf("-------------------------- chooseFromProgram - ID = %v;  Name = %v\n", call.Meta.ID, call.Meta.Name)
+		/*If "currentCallsProbability" already has the syscall ID just skip it*/
 		found := false
 		for i := range currentCallsProbability {
 			if currentCallsProbability[i].SyscallID == call.Meta.ID {
@@ -622,6 +622,11 @@ func (r *randGen) chooseFromProgram(ct *ChoiceTable, p *Prog) (int, float64) {
 	idx := sort.Search(len(currentCallsChoice), func(i int) bool {
 		return currentCallsChoice[i].SumWeights >= randVal
 	})
+
+	/*	for i := range currentCallsChoice {
+			fmt.Printf("-------------------------- chooseFromProgram - %v. SumWeights = %v\n", i, currentCallsChoice[i].SumWeights)
+		}
+		fmt.Printf("-------------------------- chooseFromProgram - sumWeights = %v; randVal = %v; chosen sumWeights = %v;\n", sumWeights, randVal, currentCallsChoice[idx].SumWeights)*/
 
 	return currentCallsProbability[idx].SyscallID, currentCallsProbability[idx].Probability
 }

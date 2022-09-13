@@ -554,17 +554,21 @@ func (mgr *Manager) preloadCorpus() {
 	}
 	mgr.corpusDB = corpusDB
 
-	if seedDir := filepath.Join(mgr.cfg.Syzkaller, "sys", mgr.cfg.TargetOS, "test"); osutil.IsExist(seedDir) {
-		seeds, err := ioutil.ReadDir(seedDir)
-		if err != nil {
-			log.Fatalf("failed to read seeds dir: %v", err)
-		}
-		for _, seed := range seeds {
-			data, err := ioutil.ReadFile(filepath.Join(seedDir, seed.Name()))
+	if mgr.cfg.DISABLEINITSEED {
+		log.Logf(0, "!!! Initial seed is disabled !!!")
+	} else {
+		if seedDir := filepath.Join(mgr.cfg.Syzkaller, "sys", mgr.cfg.TargetOS, "test"); osutil.IsExist(seedDir) {
+			seeds, err := ioutil.ReadDir(seedDir)
 			if err != nil {
-				log.Fatalf("failed to read seed %v: %v", seed.Name(), err)
+				log.Fatalf("failed to read seeds dir: %v", err)
 			}
-			mgr.seeds = append(mgr.seeds, data)
+			for _, seed := range seeds {
+				data, err := ioutil.ReadFile(filepath.Join(seedDir, seed.Name()))
+				if err != nil {
+					log.Fatalf("failed to read seed %v: %v", seed.Name(), err)
+				}
+				mgr.seeds = append(mgr.seeds, data)
+			}
 		}
 	}
 }

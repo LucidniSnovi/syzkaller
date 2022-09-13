@@ -191,7 +191,8 @@ type Config struct {
 	MABTS bool `json:"mabts"`
 	MABSS bool `json:"mabss"`
 	// MAB Generation
-	MABGEN bool `json:"mabgen"`
+	MABGEN          bool `json:"mabgen"`
+	DISABLEINITSEED bool `json:"disableinitseed"`
 }
 
 type Subsystem struct {

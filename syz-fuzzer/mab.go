@@ -38,6 +38,12 @@ type MABStatus struct {
 	Exp31Threshold float64     // Threshold based on Round.
 	CorpusUpdate   map[int]int // Track seed priority update
 	Reward         mab.TotalReward
+
+	//Initial sync values for MAB Gen
+	MABGenEnabledCalls map[int]float64
+	MABGenChoiceTable  map[int]map[int]float64
+	MABGenCoverage     int
+	MABGenTime         float64
 }
 
 func (status *MABStatus) GetTSWeight(lock bool) []float64 {

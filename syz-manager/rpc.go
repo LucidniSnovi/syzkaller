@@ -46,6 +46,11 @@ type RPCServer struct {
 	MABExp31Round   int
 	MABReward       mab.TotalReward
 	MABCorpusReward map[hash.Sig]mab.CorpusReward
+
+	MABEnabledCalls map[int]float64
+	MABChoiceTable  map[int]map[int]float64
+	MABGenCoverage  int
+	MABGenTime      float64
 }
 
 type Fuzzer struct {
@@ -58,8 +63,6 @@ type Fuzzer struct {
 
 	MABEnabledCallsRewards map[int]float64
 	MABChoiceTableRewards  map[int]map[int]float64
-	MABGenCoverage         int
-	MABGenTime             float64
 }
 
 type BugFrames struct {
@@ -87,6 +90,10 @@ func startRPCServer(mgr *Manager) (*RPCServer, error) {
 		MABRound:        0,
 		MABExp31Round:   0,
 		MABCorpusReward: make(map[hash.Sig]mab.CorpusReward),
+	}
+	if mgr.cfg.MABGEN {
+		serv.MABEnabledCalls = make(map[int]float64)
+		serv.MABChoiceTable = make(map[int]map[int]float64)
 	}
 	serv.batchSize = 5
 	if serv.batchSize < mgr.cfg.Procs {
@@ -137,6 +144,10 @@ func (serv *RPCServer) Connect(a *rpctype.ConnectArgs, r *rpctype.ConnectRes) er
 		r.CheckResult = serv.checkResult
 		f.inputs = corpus
 		f.newMaxSignal = serv.maxSignal.Copy()
+	}
+	if serv.cfg.MABGEN {
+		f.MABEnabledCallsRewards = make(map[int]float64)
+		f.MABChoiceTableRewards = make(map[int]map[int]float64)
 	}
 	return nil
 }
@@ -401,11 +412,9 @@ func (serv *RPCServer) Poll(a *rpctype.PollArgs, r *rpctype.PollRes) error {
 	log.Logf(4, "poll from %v: candidates=%v inputs=%v maxsignal=%v",
 		a.Name, len(r.Candidates), len(r.NewInputs), len(r.MaxSignal.Elems))
 
-	/*
-		if serv.cfg.MABGEN {
-			serv.SyncMABGenStatus(f, &a.RPCMABGenSync, &r.RPCMABGenSync)
-		}
-	*/
+	if serv.cfg.MABGEN {
+		serv.SyncMABGenStatus(f, &a.RPCMABGenSync, &r.RPCMABGenSync)
+	}
 
 	return nil
 }
@@ -444,9 +453,12 @@ func (serv *RPCServer) SyncMABStatus(a *rpctype.RPCMABStatus, r *rpctype.RPCMABS
 }
 
 func (serv *RPCServer) SyncMABGenStatus(fuzzer *Fuzzer, a *rpctype.RPCMABGenSync, r *rpctype.RPCMABGenSync) error {
-	//Process Enabled calls
+	log.Logf(0, "-----------------------------> RPCServer::SyncMABGenStatus --- a.EnabledCalls = %v\n", a.EnabledCalls)
+	//log.Logf(0, "-----------------------------> RPCServer::SyncMABGenStatus --- a.ChoiceTable = %v\n", a.ChoiceTable)
+	//Process Enabled calls by setting the Fuzzer field and updating the Server field
 	for ID, reward := range a.EnabledCalls {
 		fuzzer.MABEnabledCallsRewards[ID] = reward
+
 		var newReward float64
 		var rewardsCount int
 		for _, currentFuzzer := range serv.fuzzers {
@@ -456,17 +468,21 @@ func (serv *RPCServer) SyncMABGenStatus(fuzzer *Fuzzer, a *rpctype.RPCMABGenSync
 			}
 		}
 		newReward = newReward / float64(rewardsCount)
-
-		if newReward != reward {
-			fuzzer.MABEnabledCallsRewards[ID] = newReward
-			r.EnabledCalls[ID] = reward
-		}
+		serv.MABEnabledCalls[ID] = newReward
 	}
 
-	//Process Choice Table
+	//Send all saved rewards for Enabled calls
+	r.EnabledCalls = serv.MABEnabledCalls
+	log.Logf(0, "-----------------------------> RPCServer::SyncMABGenStatus --- r.EnabledCalls : %v\n", r.EnabledCalls)
+
+	//Process Choice Table by setting the Fuzzer field and updating the Server field
 	for biasCall, generatedCalls := range a.ChoiceTable {
 		for ID, reward := range generatedCalls {
+			if fuzzer.MABChoiceTableRewards[biasCall] == nil {
+				fuzzer.MABChoiceTableRewards[biasCall] = make(map[int]float64)
+			}
 			fuzzer.MABChoiceTableRewards[biasCall][ID] = reward
+
 			var newReward float64
 			var rewardsCount int
 			for _, currentFuzzer := range serv.fuzzers {
@@ -476,20 +492,24 @@ func (serv *RPCServer) SyncMABGenStatus(fuzzer *Fuzzer, a *rpctype.RPCMABGenSync
 				}
 			}
 			newReward = newReward / float64(rewardsCount)
-
-			if newReward != reward {
-				fuzzer.MABChoiceTableRewards[biasCall][ID] = newReward
-				r.ChoiceTable[biasCall][ID] = newReward
+			if serv.MABChoiceTable[biasCall] == nil {
+				serv.MABChoiceTable[biasCall] = make(map[int]float64)
 			}
+			serv.MABChoiceTable[biasCall][ID] = newReward
 		}
 	}
 
-	//Process Cov and Time
-	fuzzer.MABGenCoverage += a.Coverage
-	fuzzer.MABGenTime += a.Time
+	//Send all saved rewards for Choice Table
+	r.ChoiceTable = serv.MABChoiceTable
+	log.Logf(0, "-----------------------------> RPCServer::SyncMABGenStatus --- r.ChoiceTable : %v\n", r.ChoiceTable)
 
-	r.Coverage = fuzzer.MABGenCoverage
-	r.Time = fuzzer.MABGenTime
+	//Process Cov and Time
+	serv.MABGenCoverage += a.Coverage
+	serv.MABGenTime += a.Time
+	log.Logf(0, "-----------------------------> RPCServer::SyncMABGenStatus --- serv.MABGenCoverage : %v; serv.MABGenTime : %v\n", serv.MABGenCoverage, serv.MABGenTime)
+
+	r.Coverage = serv.MABGenCoverage
+	r.Time = serv.MABGenTime
 
 	return nil
 }
