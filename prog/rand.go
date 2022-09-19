@@ -536,7 +536,6 @@ func (r *randGen) nOutOf(n, outOf int) bool {
 }
 
 func (r *randGen) generateCall(s *state, p *Prog, insertionPoint int) []*Call {
-	fmt.Printf("-------------------------- generateCall - BEGIN\n")
 	idx := -1
 	biasCall := -1
 	if !s.ct.MabGenEnabled {
@@ -555,7 +554,7 @@ func (r *randGen) generateCall(s *state, p *Prog, insertionPoint int) []*Call {
 			fmt.Printf("bias to disabled syscall %v\n", s.ct.target.Syscalls[biasCall].Name)
 			panic("disabled syscall")
 		}
-		fmt.Printf("-------------------------- generateCall - adding BIAS %v:%v\n", biasCall, biasPr)
+		//fmt.Printf("-------------------------- generateCall - adding BIAS %v:%v\n", biasCall, biasPr)
 		p.MabBiasCalls = append(p.MabBiasCalls, mab.SyscallProbability{SyscallID: biasCall, Probability: biasPr})
 
 		resultCall, resultCallPr := s.ct.MabChoiceTable.Choose(biasCall, r.Rand)
@@ -563,7 +562,7 @@ func (r *randGen) generateCall(s *state, p *Prog, insertionPoint int) []*Call {
 			fmt.Printf("Result call is disabled - %v\n", s.ct.target.Syscalls[resultCall].Name)
 			panic("selected disabled syscall")
 		}
-		fmt.Printf("-------------------------- generateCall - adding RESULT %v:%v\n", resultCall, resultCallPr)
+		//fmt.Printf("-------------------------- generateCall - adding RESULT %v:%v\n", resultCall, resultCallPr)
 		p.MabGeneratedCalls = append(p.MabGeneratedCalls, mab.SyscallProbability{SyscallID: resultCall, Probability: resultCallPr})
 
 		idx = resultCall

@@ -23,7 +23,7 @@ func NewMatrixHelper(runs [][]int32) *MatrixHelper {
 			//For example here we take the fourth and seventh (last one) : 0 0 0 900 900 900 1900
 			//That is why we skip zeros and same values as the previous
 			for j := range runs[i] {
-				//log.Logf(0, "---------------------- [%v][%v] = %v ---------------------- \n", i, j, runs[i][j])
+				//log.Logf(MABLogLevel, "---------------------- [%v][%v] = %v ---------------------- \n", i, j, runs[i][j])
 				if runs[i][j] != 0 {
 					if runs[i][j] != previousValue {
 						newValue := runs[i][j]
@@ -64,7 +64,7 @@ func (mh *MatrixHelper) Choose(biasCall int, r *rand.Rand) (int, float64) {
 	defer mh.mu.Unlock()
 
 	if mh.mabHelpers[biasCall].HasElements() {
-		log.Logf(0, "---------------------- MatrixHelper::Choose --- biasCall = %v\n", biasCall)
+		log.Logf(MABLogLevel, "MatrixHelper::Choose --- biasCall = %v\n", biasCall)
 		return mh.mabHelpers[biasCall].Choose(r)
 	} else {
 		return -1, 0.0
@@ -79,7 +79,7 @@ func (mh *MatrixHelper) UpdateBatch(biasCalls []SyscallProbability, generatedCal
 	for i := range biasCalls {
 		currentBiasCall := biasCalls[i]
 		if _, ok := processedCalls[currentBiasCall.SyscallID]; !ok {
-			log.Logf(0, "---------------------- MatrixHelper::UpdateBatch --- currentBiasCall = %v\n", currentBiasCall)
+			log.Logf(MABLogLevel, "MatrixHelper::UpdateBatch --- currentBiasCall = %v\n", currentBiasCall)
 			processedCalls[currentBiasCall.SyscallID] = true
 			var correspondingGeneratedCalls []SyscallProbability
 			correspondingGeneratedCalls = append(correspondingGeneratedCalls, generatedCalls[i])

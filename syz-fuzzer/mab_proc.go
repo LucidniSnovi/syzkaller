@@ -13,7 +13,6 @@ import (
 )
 
 func (proc *Proc) DoGenerate() *mab.ExecResult {
-	log.Logf(0, "-------------------------- DoGenerate\n")
 	ts0 := time.Now().UnixNano()
 	ct := proc.fuzzer.choiceTable
 	p := proc.fuzzer.target.Generate(proc.rnd, prog.RecommendedCalls, ct)
@@ -74,7 +73,6 @@ func (proc *Proc) clearQueue() {
 }
 
 func (proc *Proc) MABLoop() {
-	log.Logf(0, "-------------------------- MABLoop\n")
 	// Compute weight and proba
 	weight := proc.fuzzer.MABStatus.GetTSWeight(true)
 	fuzzerSnapshot := proc.fuzzer.snapshot()

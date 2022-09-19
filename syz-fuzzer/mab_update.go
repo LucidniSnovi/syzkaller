@@ -140,9 +140,9 @@ func (status *MABStatus) UpdateGenerateWeight(ct *prog.ChoiceTable, result mab.E
 	status.Reward.RawAllTasks.Update(cov, time)
 
 	if ct.MabGenEnabled {
-		log.Logf(0, "--------------------------- MABStatus::UpdateGenerateWeight --- ENABLED CALLS\n")
+		log.Logf(MABLogLevel, "MABStatus::UpdateGenerateWeight --- ENABLED CALLS\n")
 		ct.MabEnabledCalls.UpdateBatch(result.MabBiasCalls, result)
-		log.Logf(0, "--------------------------- MABStatus::UpdateGenerateWeight --- CHOICE TABLE CALLS\n")
+		log.Logf(MABLogLevel, "MABStatus::UpdateGenerateWeight --- CHOICE TABLE CALLS\n")
 		ct.MabChoiceTable.UpdateBatch(result.MabBiasCalls, result.MabGeneratedCalls, result)
 	}
 }

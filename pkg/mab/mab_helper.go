@@ -27,6 +27,7 @@ type Helper struct {
 
 	// The index in this array is the same as the index in the MAB engine.
 	elementIDs []int
+	IDtoIndex  map[int]int
 
 	// Reward change since last Poll.
 	rewardChange map[int]float64
@@ -38,6 +39,7 @@ func NewHelper(theta float64) *Helper {
 	return &Helper{
 		mab:          &MultiArmedBandit{theta: theta},
 		rewardChange: make(map[int]float64),
+		IDtoIndex:    make(map[int]int),
 	}
 }
 
@@ -46,7 +48,7 @@ func (mh *Helper) Choose(r *rand.Rand) (int, float64) {
 	defer mh.mu.Unlock()
 
 	idx, pr := mh.mab.Choose(r)
-	log.Logf(1, "------------------------> IDX:%v; ID:%v; PR:%v\n", idx, mh.elementIDs[idx], pr)
+	log.Logf(MABLogLevel, "Helper::Choose - IDX:%v; ID:%v; PR:%v\n", idx, mh.elementIDs[idx], pr)
 	if idx < 0 {
 		// No choices available in the MAB engine.
 		return idx, 0.0
@@ -71,6 +73,7 @@ func (mh *Helper) NewChoiceWithReward(elementID int, initialReward float64) int 
 
 	idx := mh.mab.NewChoiceWithReward(initialReward)
 	mh.elementIDs = append(mh.elementIDs, elementID)
+	mh.IDtoIndex[elementID] = idx
 	return idx
 }
 
@@ -80,6 +83,7 @@ func (mh *Helper) NewChoiceWithWeight(elementID int, initialWeight float64) int 
 
 	idx := mh.mab.NewChoiceWithWeight(initialWeight)
 	mh.elementIDs = append(mh.elementIDs, elementID)
+	mh.IDtoIndex[elementID] = idx
 	return idx
 }
 
@@ -199,15 +203,13 @@ func (mh *Helper) UpdateBatch(calls []SyscallProbability, result ExecResult) {
 	//Update all choices matching the call IDs
 	if normReward != 0.0 {
 		for i := range calls {
-			for j := range mh.elementIDs {
-				if calls[i].SyscallID == mh.elementIDs[j] {
-					mh.mab.Update(j, normReward, calls[i].Probability)
-					// Record reward change.
-					if _, ok := mh.rewardChange[j]; !ok {
-						mh.rewardChange[j] = 0.0
-					}
-					mh.rewardChange[j] += normReward
+			if j, ok := mh.IDtoIndex[calls[i].SyscallID]; ok {
+				mh.mab.Update(j, normReward, calls[i].Probability)
+				// Record reward change.
+				if _, ok := mh.rewardChange[j]; !ok {
+					mh.rewardChange[j] = 0.0
 				}
+				mh.rewardChange[j] += normReward
 			}
 		}
 	}
@@ -302,10 +304,8 @@ func (mh *Helper) UpdateSyncData(calls map[int]float64, timeTotal float64, covTo
 	defer mh.mu.Unlock()
 
 	for ID, reward := range calls {
-		for i := range mh.elementIDs {
-			if mh.elementIDs[i] == ID {
-				mh.mab.UpdateSync(i, reward)
-			}
+		if j, ok := mh.IDtoIndex[ID]; ok {
+			mh.mab.UpdateSync(j, reward)
 		}
 	}
 

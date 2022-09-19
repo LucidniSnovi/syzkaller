@@ -64,7 +64,7 @@ func (status *MABStatus) writeMABStatus(managerStatus rpctype.RPCMABStatus) {
 func (status *MABStatus) readMABGenSync(ct *prog.ChoiceTable) rpctype.RPCMABGenSync {
 	var syncData rpctype.RPCMABGenSync
 	if ct == nil {
-		log.Logf(MABLogLevel, "--------------------------> MABStatus::readMABGenSync --- NO Choice Table\n")
+		//log.Logf(MABLogLevel, "MABStatus::readMABGenSync --- NO Choice Table\n")
 		syncData = rpctype.RPCMABGenSync{
 			EnabledCalls: make(map[int]float64),
 			ChoiceTable:  make(map[int]map[int]float64),
@@ -89,8 +89,12 @@ func (status *MABStatus) writeMABGenSync(ct *prog.ChoiceTable, managerStatus rpc
 		ct.MabEnabledCalls.UpdateSyncData(managerStatus.EnabledCalls, managerStatus.Time, managerStatus.Coverage)
 		ct.MabChoiceTable.UpdateSyncData(managerStatus.ChoiceTable, managerStatus.Time, managerStatus.Coverage)
 	} else {
-		status.MABGenEnabledCalls = managerStatus.EnabledCalls
-		status.MABGenChoiceTable = managerStatus.ChoiceTable
+		if len(managerStatus.EnabledCalls) > 0 {
+			status.MABGenEnabledCalls = managerStatus.EnabledCalls
+		}
+		if len(managerStatus.ChoiceTable) > 0 {
+			status.MABGenChoiceTable = managerStatus.ChoiceTable
+		}
 		status.MABGenCoverage = managerStatus.Coverage
 		status.MABGenTime = managerStatus.Time
 	}

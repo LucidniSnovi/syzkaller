@@ -56,12 +56,12 @@ func (mab *MultiArmedBandit) Choose(r *rand.Rand) (int, float64) {
 		return mab.choices[i].SumWeights >= randVal
 	})
 
-	log.Logf(0, "-------------------------> Choose --- CHOICES:\n")
-	for i := range mab.choices {
-		log.Logf(0, "%v, ", mab.choices[i].SumWeights)
-	}
-	log.Logf(0, "\n")
-	log.Logf(0, "-------------------------> Choose --- randVal: %v; sumWeights: %v; chosen SW: %v", randVal, sumWeights, mab.choices[idx].SumWeights)
+	/*	log.Logf(0, "-------------------------> Choose --- CHOICES:\n")
+		for i := range mab.choices {
+			log.Logf(0, "%v, ", mab.choices[i].SumWeights)
+		}
+		log.Logf(0, "\n")*/
+	log.Logf(MABLogLevel, "MultiArmedBandit::Choose --- randVal: %v; sumWeights: %v; chosen SW: %v", randVal, sumWeights, mab.choices[idx].SumWeights)
 	return idx, mab.choices[idx].Weight / sumWeights
 }
 
@@ -77,7 +77,7 @@ func (mab *MultiArmedBandit) adjustValues() {
 		log.Logf(MABLogLevel, "MAB average reward (%v) exceeds threshold (+-%v), adjusting",
 			avgReward, MABExponentThreshold)
 
-		log.Logf(MABLogLevel, "-------------------------> adjustValues\n")
+		log.Logf(MABLogLevel, "MultiArmedBandit::adjustValues\n")
 
 		sumWeights := 0.0
 		for i := 0; i < len(mab.choices); i++ {
@@ -154,7 +154,7 @@ func (mab *MultiArmedBandit) NewChoiceWithWeight(initialWeight float64) int {
 
 	initialReward := math.Log(initialWeight)
 
-	//log.Logf(0, "----------------------> NewChoiceWithWeight - %v,  %v", initialWeight, initialReward)
+	//log.Logf(MABLogLevel, "MultiArmedBandit::NewChoiceWithWeight - %v,  %v", initialWeight, initialReward)
 
 	newChoice := Choice{
 		Reward:     initialReward,
