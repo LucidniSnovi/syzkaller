@@ -576,6 +576,7 @@ func (r *randGen) chooseFromProgram(ct *ChoiceTable, p *Prog) (int, float64) {
 	//fmt.Printf("-------------------------- chooseFromProgram - prog length = %v [%v]\n", len(p.Calls), p.Calls)
 	var currentCallsChoice []mab.Choice
 	var currentCallsProbability []mab.SyscallProbability
+	currentCalls := make(map[int]bool)
 
 	if len(p.Calls) == 0 {
 		return -1, -1.0
@@ -583,17 +584,11 @@ func (r *randGen) chooseFromProgram(ct *ChoiceTable, p *Prog) (int, float64) {
 
 	for _, call := range p.Calls {
 		//fmt.Printf("-------------------------- chooseFromProgram - ID = %v;  Name = %v\n", call.Meta.ID, call.Meta.Name)
-		/*If "currentCallsProbability" already has the syscall ID just skip it*/
-		found := false
-		for i := range currentCallsProbability {
-			if currentCallsProbability[i].SyscallID == call.Meta.ID {
-				found = true
-				break
-			}
-		}
-		if found {
+		/*If "currentCalls" already has the syscall ID just skip it*/
+		if _, ok := currentCalls[call.Meta.ID]; ok {
 			continue
 		}
+		currentCalls[call.Meta.ID] = true
 
 		mabChoice, mabProbability := ct.MabEnabledCalls.GetChoiceAndProbability(call.Meta.ID)
 		newChoice := mab.Choice{

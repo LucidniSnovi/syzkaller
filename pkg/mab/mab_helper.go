@@ -287,11 +287,10 @@ func (mh *Helper) GetChoiceAndProbability(syscallID int) (Choice, float64) {
 	mh.mu.Lock()
 	defer mh.mu.Unlock()
 
-	for i := range mh.elementIDs {
-		if mh.elementIDs[i] == syscallID {
-			return mh.mab.GetChoiceAndProbability(i)
-		}
+	if j, ok := mh.IDtoIndex[syscallID]; ok {
+		return mh.mab.GetChoiceAndProbability(j)
 	}
+
 	return Choice{
 		Reward:     -1,
 		Weight:     -1,
