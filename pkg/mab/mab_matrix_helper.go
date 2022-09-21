@@ -100,7 +100,10 @@ func (mh *MatrixHelper) Poll() map[int]map[int]float64 {
 	ret := make(map[int]map[int]float64)
 
 	for i, mabHelper := range mh.mabHelpers {
-		ret[i], _, _ = mabHelper.Poll()
+		tmp, _, _ := mabHelper.Poll()
+		if len(tmp) > 0 {
+			ret[i] = tmp
+		}
 	}
 
 	return ret
