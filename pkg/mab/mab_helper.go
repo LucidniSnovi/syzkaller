@@ -48,7 +48,7 @@ func (mh *Helper) Choose(r *rand.Rand) (int, float64) {
 	defer mh.mu.Unlock()
 
 	idx, pr := mh.mab.Choose(r)
-	log.Logf(MABLogLevel, "Helper::Choose - IDX:%v; ID:%v; PR:%v\n", idx, mh.elementIDs[idx], pr)
+	log.Logf(MABLogLevel, "Helper::Choose - IDX:%v; ID:%v; PR:%v, REW:%v\n", idx, mh.elementIDs[idx], pr, mh.GetRawReward(idx))
 	if idx < 0 {
 		// No choices available in the MAB engine.
 		return idx, 0.0

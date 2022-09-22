@@ -194,8 +194,8 @@ func (mab *MultiArmedBandit) Update(idx int, reward, pr float64) {
 	}
 	// Update reward based on growth factor.
 	rewardDiff := mab.eta * reward / (pr + mab.gamma)
-	log.Logf(MABLogLevel, "MAB reward update: %v * %v / (%v + %v) = %v",
-		mab.eta, reward, pr, mab.gamma, rewardDiff)
+	log.Logf(MABLogLevel, "MAB reward update: %v * %v / (%v + %v) = %v; old = %v -> new = %v",
+		mab.eta, reward, pr, mab.gamma, rewardDiff, mab.choices[idx].Reward, mab.choices[idx].Reward+rewardDiff)
 	mab.choices[idx].Reward += rewardDiff
 	mab.sumRewards += rewardDiff
 	mab.updateWeight(idx)

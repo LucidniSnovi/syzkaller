@@ -535,10 +535,10 @@ func (r *randGen) nOutOf(n, outOf int) bool {
 	return v < n
 }
 
-func (r *randGen) generateCall(s *state, p *Prog, insertionPoint int) []*Call {
+func (r *randGen) generateCall(s *state, p *Prog, insertionPoint int, useMABApproach bool) []*Call {
 	idx := -1
 	biasCall := -1
-	if !s.ct.MabGenEnabled {
+	if !useMABApproach {
 		if insertionPoint > 0 {
 			// Choosing the base call is based on the insertion point of the new calls sequence.
 			biasCall = p.Calls[r.Intn(insertionPoint)].Meta.ID

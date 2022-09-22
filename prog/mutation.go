@@ -142,7 +142,7 @@ func (ctx *mutator) insertCall() bool {
 		c = p.Calls[idx]
 	}
 	s := analyze(ctx.ct, ctx.corpus, p, c)
-	calls := r.generateCall(s, p, idx)
+	calls := r.generateCall(s, p, idx, false)
 	p.insertBefore(c, calls)
 	for len(p.Calls) > ctx.ncalls {
 		p.RemoveCall(idx)

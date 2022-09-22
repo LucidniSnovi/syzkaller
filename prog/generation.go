@@ -16,7 +16,7 @@ func (target *Target) Generate(rs rand.Source, ncalls int, ct *ChoiceTable) *Pro
 	r := newRand(target, rs)
 	s := newState(target, ct, nil)
 	for len(p.Calls) < ncalls {
-		calls := r.generateCall(s, p, len(p.Calls))
+		calls := r.generateCall(s, p, len(p.Calls), ct.MabGenEnabled)
 		for _, c := range calls {
 			s.analyze(c)
 			p.Calls = append(p.Calls, c)

@@ -122,6 +122,12 @@ func (proc *Proc) loop() {
 			log.Logf(1, "#%v: generated", proc.pid)
 			_, r := proc.execute(proc.execOpts, p, ProgNormal, StatGenerate)
 			r.TimeTotal = float64(time.Now().UnixNano()-ts0) / MABTimeUnit
+			if ct.MabGenEnabled {
+				log.Logf(4, "Proc::loop --- ENABLED CALLS\n")
+				ct.MabEnabledCalls.UpdateBatch(p.MabBiasCalls, r)
+				log.Logf(4, "Proc::loop --- CHOICE TABLE CALLS\n")
+				ct.MabChoiceTable.UpdateBatch(p.MabBiasCalls, p.MabGeneratedCalls, r)
+			}
 			log.Logf(0, "Work Type: 0, Result: %+v\n", r)
 		} else {
 			// Mutate an existing prog.

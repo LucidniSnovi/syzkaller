@@ -454,7 +454,7 @@ func (serv *RPCServer) SyncMABStatus(a *rpctype.RPCMABStatus, r *rpctype.RPCMABS
 
 func (serv *RPCServer) SyncMABGenStatus(fuzzer *Fuzzer, a *rpctype.RPCMABGenSync, r *rpctype.RPCMABGenSync) error {
 	log.Logf(4, "RPCServer::SyncMABGenStatus --- a.EnabledCalls = %v\n", a.EnabledCalls)
-	//log.Logf(0, "-----------------------------> RPCServer::SyncMABGenStatus --- a.ChoiceTable = %v\n", a.ChoiceTable)
+	log.Logf(4, "RPCServer::SyncMABGenStatus --- a.ChoiceTable = %v\n", a.ChoiceTable)
 	//Process Enabled calls by setting the Fuzzer field and updating the Server field
 	for ID, reward := range a.EnabledCalls {
 		fuzzer.MABEnabledCallsRewards[ID] = reward
