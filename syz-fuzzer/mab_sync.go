@@ -70,14 +70,24 @@ func (status *MABStatus) readMABGenSync(ct *prog.ChoiceTable) rpctype.RPCMABGenS
 			ChoiceTable:  make(map[int]map[int]float64),
 		}
 	} else {
-		enabledCallsRewards, timeDiff, covDiff := ct.MabEnabledCalls.Poll()
-		choiceTableRewards := ct.MabChoiceTable.Poll()
+		enabledCallsRewards, count, totalCov, totalTime, rewardTotal, rewardTotal2 := ct.MabEnabledCalls.Poll()
+		choiceTableRewards, countCT, totalCovCT, totalTimeCT, rewardTotalCT, rewardTotal2CT := ct.MabChoiceTable.Poll()
 
 		syncData = rpctype.RPCMABGenSync{
 			EnabledCalls: enabledCallsRewards,
 			ChoiceTable:  choiceTableRewards,
-			Coverage:     covDiff,
-			Time:         timeDiff,
+
+			Count:    count,
+			Coverage: totalCov,
+			Time:     totalTime,
+			Reward:   rewardTotal,
+			Reward2:  rewardTotal2,
+
+			CountCT:    countCT,
+			CoverageCT: totalCovCT,
+			TimeCT:     totalTimeCT,
+			RewardCT:   rewardTotalCT,
+			Reward2CT:  rewardTotal2CT,
 		}
 	}
 
@@ -86,8 +96,10 @@ func (status *MABStatus) readMABGenSync(ct *prog.ChoiceTable) rpctype.RPCMABGenS
 
 func (status *MABStatus) writeMABGenSync(ct *prog.ChoiceTable, managerStatus rpctype.RPCMABGenSync) {
 	if ct != nil {
-		ct.MabEnabledCalls.UpdateSyncData(managerStatus.EnabledCalls, managerStatus.Time, managerStatus.Coverage)
-		ct.MabChoiceTable.UpdateSyncData(managerStatus.ChoiceTable, managerStatus.Time, managerStatus.Coverage)
+		ct.MabEnabledCalls.UpdateSyncData(managerStatus.EnabledCalls, managerStatus.Count, managerStatus.Coverage, managerStatus.Time,
+			managerStatus.Reward, managerStatus.Reward2)
+		ct.MabChoiceTable.UpdateSyncData(managerStatus.ChoiceTable, managerStatus.CountCT, managerStatus.CoverageCT, managerStatus.TimeCT,
+			managerStatus.RewardCT, managerStatus.Reward2CT)
 	} else {
 		if len(managerStatus.EnabledCalls) > 0 {
 			status.MABGenEnabledCalls = managerStatus.EnabledCalls
@@ -95,7 +107,19 @@ func (status *MABStatus) writeMABGenSync(ct *prog.ChoiceTable, managerStatus rpc
 		if len(managerStatus.ChoiceTable) > 0 {
 			status.MABGenChoiceTable = managerStatus.ChoiceTable
 		}
-		status.MABGenCoverage = managerStatus.Coverage
-		status.MABGenTime = managerStatus.Time
+		if managerStatus.Count > 0 {
+			status.MABGenCount = managerStatus.Count
+			status.MABGenCoverage = managerStatus.Coverage
+			status.MABGenTime = managerStatus.Time
+			status.MABGenReward = managerStatus.Reward
+			status.MABGenReward2 = managerStatus.Reward2
+		}
+		if len(managerStatus.CountCT) > 0 {
+			status.MABGenCountCT = managerStatus.CountCT
+			status.MABGenCoverageCT = managerStatus.CoverageCT
+			status.MABGenTimeCT = managerStatus.TimeCT
+			status.MABGenRewardCT = managerStatus.RewardCT
+			status.MABGenReward2CT = managerStatus.Reward2CT
+		}
 	}
 }

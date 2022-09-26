@@ -318,8 +318,10 @@ func main() {
 		fuzzer.choiceTable.CreateMABChoiceTable()
 		log.Logf(0, "Creating MAB Enabled calls and MAB Choice table...DONE\n")
 		log.Logf(0, "Updating with MAB Gen sync data.\n")
-		fuzzer.choiceTable.MabEnabledCalls.UpdateSyncData(fuzzer.MABStatus.MABGenEnabledCalls, fuzzer.MABStatus.MABGenTime, fuzzer.MABStatus.MABGenCoverage)
-		fuzzer.choiceTable.MabChoiceTable.UpdateSyncData(fuzzer.MABStatus.MABGenChoiceTable, fuzzer.MABStatus.MABGenTime, fuzzer.MABStatus.MABGenCoverage)
+		fuzzer.choiceTable.MabEnabledCalls.UpdateSyncData(fuzzer.MABStatus.MABGenEnabledCalls, fuzzer.MABStatus.MABGenCount, fuzzer.MABStatus.MABGenCoverage,
+			fuzzer.MABStatus.MABGenTime, fuzzer.MABStatus.MABGenReward, fuzzer.MABStatus.MABGenReward2)
+		fuzzer.choiceTable.MabChoiceTable.UpdateSyncData(fuzzer.MABStatus.MABGenChoiceTable, fuzzer.MABStatus.MABGenCountCT, fuzzer.MABStatus.MABGenCoverageCT,
+			fuzzer.MABStatus.MABGenTimeCT, fuzzer.MABStatus.MABGenRewardCT, fuzzer.MABStatus.MABGenReward2CT)
 		log.Logf(0, "Updating with MAB Gen sync data...DONE\n")
 	}
 

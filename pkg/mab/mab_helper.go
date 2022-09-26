@@ -31,8 +31,6 @@ type Helper struct {
 
 	// Reward change since last Poll.
 	rewardChange map[int]float64
-	timeDiff     float64
-	covDiff      int
 }
 
 func NewHelper(theta float64) *Helper {
@@ -145,8 +143,6 @@ func (mh *Helper) Update(idx int, result ExecResult, pr float64) {
 	if updateTotal {
 		mh.totalTime += result.TimeExec
 		mh.totalCov += result.Cov
-		mh.timeDiff += result.TimeExec
-		mh.covDiff += result.Cov
 		mh.count++
 		mh.rewardTotal += reward
 		mh.rewardTotal2 += reward * reward
@@ -217,15 +213,13 @@ func (mh *Helper) UpdateBatch(calls []SyscallProbability, result ExecResult) {
 	if updateTotal {
 		mh.totalTime += result.TimeExec
 		mh.totalCov += result.Cov
-		mh.timeDiff += result.TimeExec
-		mh.covDiff += result.Cov
 		mh.count++
 		mh.rewardTotal += reward
 		mh.rewardTotal2 += reward * reward
 	}
 }
 
-func (mh *Helper) Poll() (map[int]float64, float64, int) {
+func (mh *Helper) Poll() (map[int]float64, int, int, float64, float64, float64) {
 	mh.mu.Lock()
 	defer mh.mu.Unlock()
 
@@ -251,12 +245,7 @@ func (mh *Helper) Poll() (map[int]float64, float64, int) {
 		delete(mh.rewardChange, pidx)
 	}
 
-	timeDiff := mh.timeDiff
-	covDiff := mh.covDiff
-	mh.timeDiff = 0
-	mh.covDiff = 0
-
-	return ret, timeDiff, covDiff
+	return ret, mh.count, mh.totalCov, mh.totalTime, mh.rewardTotal, mh.rewardTotal2
 }
 
 func (mh *Helper) UpdateTotal(timeTotal float64, covTotal int) {
@@ -298,7 +287,7 @@ func (mh *Helper) GetChoiceAndProbability(syscallID int) (Choice, float64) {
 	}, -1.0
 }
 
-func (mh *Helper) UpdateSyncData(calls map[int]float64, timeTotal float64, covTotal int) {
+func (mh *Helper) UpdateSyncData(calls map[int]float64, count int, totalCov int, totalTime float64, rewardTotal float64, rewardTotal2 float64) {
 	mh.mu.Lock()
 	defer mh.mu.Unlock()
 
@@ -308,7 +297,13 @@ func (mh *Helper) UpdateSyncData(calls map[int]float64, timeTotal float64, covTo
 		}
 	}
 
-	//log.Logf(MABLogLevel, "MAB total time: %v -> %v, coverage: %v -> %v", mh.totalTime, timeTotal, mh.totalCov, covTotal)
-	mh.totalTime = timeTotal
-	mh.totalCov = covTotal
+	if len(calls) > 0 {
+		log.Logf(MABLogLevel, "Helper::UpdateSyncData --- count: %v -> %v, coverage: %v -> %v, time: %v -> %v, rew: %v -> %v, rew2: %v -> %v\n",
+			mh.count, count, mh.totalCov, totalCov, mh.totalTime, totalTime, mh.rewardTotal, rewardTotal, mh.rewardTotal2, rewardTotal2)
+		mh.count = count
+		mh.totalCov = totalCov
+		mh.totalTime = totalTime
+		mh.rewardTotal = rewardTotal
+		mh.rewardTotal2 = rewardTotal2
+	}
 }

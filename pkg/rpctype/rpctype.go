@@ -35,8 +35,18 @@ type RPCMABStatus struct {
 type RPCMABGenSync struct {
 	EnabledCalls map[int]float64
 	ChoiceTable  map[int]map[int]float64
-	Coverage     int
-	Time         float64
+
+	Count    int
+	Coverage int
+	Time     float64
+	Reward   float64
+	Reward2  float64
+
+	CountCT    map[int]int
+	CoverageCT map[int]int
+	TimeCT     map[int]float64
+	RewardCT   map[int]float64
+	Reward2CT  map[int]float64
 }
 
 type Candidate struct {

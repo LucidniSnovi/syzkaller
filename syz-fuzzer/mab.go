@@ -42,8 +42,16 @@ type MABStatus struct {
 	//Initial sync values for MAB Gen
 	MABGenEnabledCalls map[int]float64
 	MABGenChoiceTable  map[int]map[int]float64
+	MABGenCount        int
 	MABGenCoverage     int
 	MABGenTime         float64
+	MABGenReward       float64
+	MABGenReward2      float64
+	MABGenCountCT      map[int]int
+	MABGenCoverageCT   map[int]int
+	MABGenTimeCT       map[int]float64
+	MABGenRewardCT     map[int]float64
+	MABGenReward2CT    map[int]float64
 }
 
 func (status *MABStatus) GetTSWeight(lock bool) []float64 {

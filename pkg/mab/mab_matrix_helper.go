@@ -93,29 +93,40 @@ func (mh *MatrixHelper) UpdateBatch(biasCalls []SyscallProbability, generatedCal
 	}
 }
 
-func (mh *MatrixHelper) Poll() map[int]map[int]float64 {
+func (mh *MatrixHelper) Poll() (map[int]map[int]float64, map[int]int, map[int]int, map[int]float64, map[int]float64, map[int]float64) {
 	mh.mu.Lock()
 	defer mh.mu.Unlock()
 
-	ret := make(map[int]map[int]float64)
+	matrix := make(map[int]map[int]float64)
+	count := make(map[int]int)
+	totalCov := make(map[int]int)
+	totalTime := make(map[int]float64)
+	rewardTotal := make(map[int]float64)
+	rewardTotal2 := make(map[int]float64)
 
 	for i, mabHelper := range mh.mabHelpers {
-		tmp, _, _ := mabHelper.Poll()
-		if len(tmp) > 0 {
-			ret[i] = tmp
+		tmpM, tmpCount, tmpTotalCov, tmpTotalTime, tmpRewardTotal, tmpRewardTotal2 := mabHelper.Poll()
+		if len(tmpM) > 0 {
+			matrix[i] = tmpM
+			count[i] = tmpCount
+			totalCov[i] = tmpTotalCov
+			totalTime[i] = tmpTotalTime
+			rewardTotal[i] = tmpRewardTotal
+			rewardTotal2[i] = tmpRewardTotal2
 		}
 	}
 
-	return ret
+	return matrix, count, totalCov, totalTime, rewardTotal, rewardTotal2
 }
 
-func (mh *MatrixHelper) UpdateSyncData(matrix map[int]map[int]float64, timeTotal float64, covTotal int) {
+func (mh *MatrixHelper) UpdateSyncData(matrix map[int]map[int]float64, count map[int]int, totalCov map[int]int, totalTime map[int]float64,
+	rewardTotal map[int]float64, rewardTotal2 map[int]float64) {
+
 	mh.mu.Lock()
 	defer mh.mu.Unlock()
 
 	for biasCall, generatedCalls := range matrix {
-		if len(generatedCalls) > 0 {
-			mh.mabHelpers[biasCall].UpdateSyncData(generatedCalls, timeTotal, covTotal)
-		}
+		mh.mabHelpers[biasCall].UpdateSyncData(generatedCalls, count[biasCall], totalCov[biasCall], totalTime[biasCall],
+			rewardTotal[biasCall], rewardTotal2[biasCall])
 	}
 }
