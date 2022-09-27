@@ -70,7 +70,7 @@ func (status *MABStatus) readMABGenSync(ct *prog.ChoiceTable) rpctype.RPCMABGenS
 			ChoiceTable:  make(map[int]map[int]float64),
 		}
 	} else {
-		enabledCallsRewards, count, totalCov, totalTime, rewardTotal, rewardTotal2 := ct.MabEnabledCalls.Poll()
+		enabledCallsRewards, count, totalCov, totalTime, rewardTotal, rewardTotal2, _ := ct.MabEnabledCalls.Poll()
 		choiceTableRewards, countCT, totalCovCT, totalTimeCT, rewardTotalCT, rewardTotal2CT := ct.MabChoiceTable.Poll()
 
 		syncData = rpctype.RPCMABGenSync{

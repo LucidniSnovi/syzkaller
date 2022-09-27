@@ -149,7 +149,7 @@ func (mh *Helper) Update(idx int, result ExecResult, pr float64) {
 	}
 }
 
-func (mh *Helper) UpdateBatch(calls []SyscallProbability, result ExecResult) {
+func (mh *Helper) UpdateBatch(calls []SyscallProbability, result ExecResult) bool {
 	mh.mu.Lock()
 	defer mh.mu.Unlock()
 
@@ -217,9 +217,11 @@ func (mh *Helper) UpdateBatch(calls []SyscallProbability, result ExecResult) {
 		mh.rewardTotal += reward
 		mh.rewardTotal2 += reward * reward
 	}
+
+	return len(mh.rewardChange) > 0
 }
 
-func (mh *Helper) Poll() (map[int]float64, int, int, float64, float64, float64) {
+func (mh *Helper) Poll() (map[int]float64, int, int, float64, float64, float64, int) {
 	mh.mu.Lock()
 	defer mh.mu.Unlock()
 
@@ -245,7 +247,7 @@ func (mh *Helper) Poll() (map[int]float64, int, int, float64, float64, float64) 
 		delete(mh.rewardChange, pidx)
 	}
 
-	return ret, mh.count, mh.totalCov, mh.totalTime, mh.rewardTotal, mh.rewardTotal2
+	return ret, mh.count, mh.totalCov, mh.totalTime, mh.rewardTotal, mh.rewardTotal2, len(mh.rewardChange)
 }
 
 func (mh *Helper) UpdateTotal(timeTotal float64, covTotal int) {

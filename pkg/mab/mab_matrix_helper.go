@@ -7,8 +7,9 @@ import (
 )
 
 type MatrixHelper struct {
-	mu         sync.RWMutex
-	mabHelpers []*Helper
+	mu             sync.RWMutex
+	mabHelpers     []*Helper
+	updatedHelpers map[int]bool
 }
 
 func NewMatrixHelper(runs [][]int32) *MatrixHelper {
@@ -38,6 +39,7 @@ func NewMatrixHelper(runs [][]int32) *MatrixHelper {
 			}
 		}
 	}
+	matrixHelper.updatedHelpers = make(map[int]bool)
 	return matrixHelper
 }
 
@@ -88,7 +90,9 @@ func (mh *MatrixHelper) UpdateBatch(biasCalls []SyscallProbability, generatedCal
 					correspondingGeneratedCalls = append(correspondingGeneratedCalls, generatedCalls[j])
 				}
 			}
-			mh.mabHelpers[currentBiasCall.SyscallID].UpdateBatch(correspondingGeneratedCalls, result)
+			if mh.mabHelpers[currentBiasCall.SyscallID].UpdateBatch(correspondingGeneratedCalls, result) {
+				mh.updatedHelpers[currentBiasCall.SyscallID] = true
+			}
 		}
 	}
 }
@@ -104,8 +108,9 @@ func (mh *MatrixHelper) Poll() (map[int]map[int]float64, map[int]int, map[int]in
 	rewardTotal := make(map[int]float64)
 	rewardTotal2 := make(map[int]float64)
 
-	for i, mabHelper := range mh.mabHelpers {
-		tmpM, tmpCount, tmpTotalCov, tmpTotalTime, tmpRewardTotal, tmpRewardTotal2 := mabHelper.Poll()
+	for i := range mh.updatedHelpers {
+		log.Logf(MABLogLevel, "MatrixHelper::Poll --- currentBiasCall = %v\n", i)
+		tmpM, tmpCount, tmpTotalCov, tmpTotalTime, tmpRewardTotal, tmpRewardTotal2, changesLeft := mh.mabHelpers[i].Poll()
 		if len(tmpM) > 0 {
 			matrix[i] = tmpM
 			count[i] = tmpCount
@@ -113,6 +118,9 @@ func (mh *MatrixHelper) Poll() (map[int]map[int]float64, map[int]int, map[int]in
 			totalTime[i] = tmpTotalTime
 			rewardTotal[i] = tmpRewardTotal
 			rewardTotal2[i] = tmpRewardTotal2
+		}
+		if changesLeft == 0 {
+			delete(mh.updatedHelpers, i)
 		}
 	}
 
